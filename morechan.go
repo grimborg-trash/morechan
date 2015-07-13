@@ -11,7 +11,7 @@ type Item map[string]interface{}
 type Response struct {
 	HasMore       bool   `json:"has_more"`
 	LastTimestamp int    `json:"last_timestamp"`
-	Items         []Item `json:"items,inline"`
+	Items         []Item `json:"items"`
 }
 
 type Cat struct {
