@@ -50,18 +50,35 @@ func (item Item) IceCream() IceCream {
 	return IceCream{Flavor: item["flavor"].(string)}
 }
 
+func GetCats(c chan Cat) {
+	items := make(chan Item)
+	go GetAll("cat", items)
+	for item := range items {
+		c <- item.Cat()
+	}
+	close(c)
+}
+
+func GetIceCreams(c chan IceCream) {
+	items := make(chan Item)
+	go GetAll("ice_cream", items)
+	for item := range items {
+		c <- item.IceCream()
+	}
+	close(c)
+}
+
 func main() {
-	c := make(chan Item)
-	go GetAll("cat", c)
-	for x := range c {
-		cat := x.Cat()
+	c := make(chan Cat)
+	go GetCats(c)
+	for cat := range c {
 		log.Printf("%+v", cat)
 	}
 
-	c2 := make(chan Item)
-	go GetAll("ice_cream", c2)
-	for x := range c2 {
-		cat := x.IceCream()
-		log.Printf("%+v", cat)
+	c2 := make(chan IceCream)
+	go GetIceCreams(c2)
+	for iceCream := range c2 {
+		log.Printf("%+v", iceCream)
 	}
+
 }
