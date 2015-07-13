@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/grimborg/morechan/fakehttp"
+	"github.com/grimborg-trash/morechan/fakehttp"
 	"log"
 )
 
@@ -47,17 +47,48 @@ func GetAll(resource string, c *chan []byte) {
 	}
 }
 
-// func GetAllCats() 59 Cat {
-//     c := make(chan []Cat)
-//     for {
-
-//     }
-// }
-
-func main() {
+func GetAllCats(resp *chan Cat) {
 	c := make(chan []byte)
 	go GetAll("cat", &c)
+	for data := range c {
+		cats := &Cats{}
+		err := json.Unmarshal(data, &cats)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		for _, item := range cats.Items {
+			*resp <- item
+		}
+	}
+	close(*resp)
+}
+
+func GetAllIceCreams(resp *chan IceCream) {
+	c := make(chan []byte)
+	go GetAll("ice_cream", &c)
+	for data := range c {
+		iceCreams := &IceCreams{}
+		err := json.Unmarshal(data, &iceCreams)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		for _, item := range iceCreams.Items {
+			*resp <- item
+		}
+	}
+	close(*resp)
+}
+
+func main() {
+	c := make(chan Cat)
+	go GetAllCats(&c)
 	for x := range c {
-		log.Println(string(x))
+		log.Printf("%+v\n", x)
+	}
+
+	c2 := make(chan IceCream)
+	go GetAllIceCreams(&c2)
+	for x := range c2 {
+		log.Printf("%+v\n", x)
 	}
 }
