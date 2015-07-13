@@ -31,14 +31,14 @@ func GetAll(resource string, c chan Item) {
 		if err != nil {
 			log.Fatalln(err)
 		}
-		if !resp.HasMore {
-			close(c)
-			return
-		}
 		for _, i := range resp.Items {
 			c <- i
 		}
 		lastTimestamp = resp.LastTimestamp
+		if !resp.HasMore {
+			close(c)
+			return
+		}
 	}
 }
 
