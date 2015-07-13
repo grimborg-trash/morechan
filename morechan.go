@@ -6,9 +6,12 @@ import (
 	"log"
 )
 
-type ResponseMeta struct {
-	HasMore       bool `json:"has_more"`
-	LastTimestamp int  `json:"last_timestamp"`
+type Item map[string]interface{}
+
+type Response struct {
+	HasMore       bool   `json:"has_more"`
+	LastTimestamp int    `json:"last_timestamp"`
+	Items         []Item `json:"items,inline"`
 }
 
 type Cat struct {
@@ -19,76 +22,46 @@ type IceCream struct {
 	Flavor string `json:"flavor"`
 }
 
-type Cats struct {
-	Items []Cat `json:"items"`
-	ResponseMeta
-}
-
-type IceCreams struct {
-	Items []IceCream `json:"items"`
-	ResponseMeta
-}
-
-func GetAll(resource string, c *chan []byte) {
+func GetAll(resource string, c chan Item) {
 	lastTimestamp := 0
 	for {
 		b := fakehttp.Get(resource, lastTimestamp)
-		*c <- b
-		resp := &ResponseMeta{}
+		resp := Response{}
 		err := json.Unmarshal(b, &resp)
 		if err != nil {
 			log.Fatalln(err)
 		}
 		if !resp.HasMore {
-			close(*c)
+			close(c)
 			return
+		}
+		for _, i := range resp.Items {
+			c <- i
 		}
 		lastTimestamp = resp.LastTimestamp
 	}
 }
 
-func GetAllCats(resp *chan Cat) {
-	c := make(chan []byte)
-	go GetAll("cat", &c)
-	for data := range c {
-		cats := &Cats{}
-		err := json.Unmarshal(data, &cats)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		for _, item := range cats.Items {
-			*resp <- item
-		}
-	}
-	close(*resp)
+func (item Item) Cat() Cat {
+	return Cat{Name: item["name"].(string)}
 }
 
-func GetAllIceCreams(resp *chan IceCream) {
-	c := make(chan []byte)
-	go GetAll("ice_cream", &c)
-	for data := range c {
-		iceCreams := &IceCreams{}
-		err := json.Unmarshal(data, &iceCreams)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		for _, item := range iceCreams.Items {
-			*resp <- item
-		}
-	}
-	close(*resp)
+func (item Item) IceCream() IceCream {
+	return IceCream{Flavor: item["flavor"].(string)}
 }
 
 func main() {
-	c := make(chan Cat)
-	go GetAllCats(&c)
+	c := make(chan Item)
+	go GetAll("cat", c)
 	for x := range c {
-		log.Printf("%+v\n", x)
+		cat := x.Cat()
+		log.Printf("%+v", cat)
 	}
 
-	c2 := make(chan IceCream)
-	go GetAllIceCreams(&c2)
+	c2 := make(chan Item)
+	go GetAll("ice_cream", c2)
 	for x := range c2 {
-		log.Printf("%+v\n", x)
+		cat := x.IceCream()
+		log.Printf("%+v", cat)
 	}
 }
